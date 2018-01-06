@@ -1,0 +1,57 @@
+html, body
+{
+	height: 100%;
+	width: 100%;
+	margin: 0px;
+	font-family: monospace;
+	font-size: 24px;
+	color: #aaaaaa; /* text color */
+}
+
+#leftdiv
+{
+	float: left;
+	width: 20%;
+	height: 100%;
+	display: table;  /* allows for vertical centering */
+}
+
+#controlsdiv
+{
+	display: table-cell;
+	vertical-align: middle;
+	text-align: left;
+}
+
+.textbox
+{
+	text-align: left;
+	margin-left: 40%;
+	margin-top: 20px;
+	margin-bottom: 20px;
+}
+
+#middlediv
+{
+	float: left;
+	width: 60%;
+	display: block;
+	margin-left: auto;
+	margin-right: auto;
+	text-align: center;
+}
+
+#rightdiv
+{
+	float: right;
+	width: 20%;
+	height: 100%;
+	display: table;
+}
+
+#leveldiv
+{
+	display: table-cell;
+	vertical-align: middle;
+	text-align: center;
+}

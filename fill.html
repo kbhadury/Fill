@@ -1,0 +1,42 @@
+<!DOCTYPE HTML>
+
+<html>
+
+<head>
+	<title>Fill</title>
+	<link rel="stylesheet" href="fill.css">
+</head>
+
+<body onload="init()">
+
+	<div id='leftdiv'>
+		<div id='controlsdiv'>
+			<div class='textbox'>w : up</div>
+			<div class='textbox'>a : left</div>
+			<div class='textbox'>s : down</div>
+			<div class='textbox'>d : right</div>
+			<div class='textbox'>r : reset</div>
+		</div>
+	</div>
+	
+	<div id='middlediv'>
+		<img src="fill_logo.png" id='logo'>
+		<br>
+		<canvas id='gameboard' width='400' height='400'>
+			If you can see this, your browser doesn't support the canvas element :(
+		</canvas>
+	</div>
+	
+	<div id='rightdiv' class='hcenterdiv'>
+		<div id='leveldiv'>
+		<p>level</p>
+		<p id='levelcounter'>Error parsing levels</p> <!-- This should get replaced by the code -->
+		</div>
+	</div>
+	
+	<script src='levels.js'></script>
+	<script src='fill.js'></script>
+	
+</body>
+
+</html>
