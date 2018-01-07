@@ -1,2 +1,7 @@
 # Fill
-A minimalist game about filling in spaces
+
+Use the wasd keys to move
+
+Press r to reset
+
+Fill in all the spaces
