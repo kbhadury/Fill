@@ -122,6 +122,14 @@ function draw()
 			{
 				board_ctx.fillRect(10+c*SQUARE_SIZE, 10+r*SQUARE_SIZE, SQUARE_SIZE+10, SQUARE_SIZE);
 			}
+			else if(type == WRAP_UP)
+			{
+				board_ctx.fillRect(10+c*SQUARE_SIZE, r*SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE+10);
+			}
+			else if(type == WRAP_DOWN)
+			{
+				board_ctx.fillRect(10+c*SQUARE_SIZE, 10+r*SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE+10);
+			}
 			else
 			{
 				board_ctx.fillRect(10+c*SQUARE_SIZE, 10+r*SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);

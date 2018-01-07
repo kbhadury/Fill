@@ -109,6 +109,29 @@ var wrap_layout = [
 	];
 var wrap_l = new Level(wrap_width, wrap_height, wrap_layout);
 
+//You don't always need to wrap!
+var extrawrap_width = 5;
+var extrawrap_height = 4;
+var extrawrap_layout = [
+	[WRAP_LEFT, START, WRAP_UP, EMPTY, WRAP_RIGHT],
+	[WALL, WALL, WALL, EMPTY, EMPTY],
+	[EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
+	[WRAP_LEFT, EMPTY, WRAP_DOWN, FINISH, WRAP_RIGHT]
+	];
+var extrawrap_l = new Level(extrawrap_width, extrawrap_height, extrawrap_layout);
+
+//Lots of wrapping
+var allwrap_width = 5;
+var allwrap_height = 5;
+var allwrap_layout = [
+	[FINISH, WRAP_UP, EMPTY, WRAP_UP, EMPTY,],
+	[WRAP_LEFT, WALL, EMPTY, WALL, WRAP_RIGHT],
+	[EMPTY, EMPTY, TWO_STEP, EMPTY, START],
+	[WRAP_LEFT, WALL, EMPTY, WALL, WRAP_RIGHT],
+	[WALL, WRAP_DOWN, EMPTY, WRAP_DOWN, EMPTY]
+	];
+var allwrap_l = new Level(allwrap_width, allwrap_height, allwrap_layout);
+
 //All levels are stored here
 var levels = [
 	start_l,
@@ -116,7 +139,9 @@ var levels = [
 	walls_l,
 	twostep_l,
 	backtrack_l,
-	wrap_l
+	wrap_l,
+	extrawrap_l,
+	allwrap_l
 	];
 
 //Returns the color that corresponds with each type of square
@@ -131,6 +156,9 @@ function getColor(type)
 			return '#66d9ff';
 		case EMPTY:
 		case WRAP_LEFT:
+		case WRAP_RIGHT:
+		case WRAP_UP:
+		case WRAP_DOWN:
 			return '#eeeeee';
 		case WALL:
 			return '#000000';
