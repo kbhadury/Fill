@@ -281,9 +281,9 @@ function moveTo(next_row, next_col)
 	if(next_square == WALL || next_square == VISITED || next_square == START) return;
 	
 	//If we make it here, it's a valid move
-	if(cur_square == TWO_STEP)
+	if(cur_square == HOLE)
 	{
-		cur_level.layout[this.row][this.col] = EMPTY; //we can reuse this square if we were on a two-step
+		cur_level.layout[this.row][this.col] = EMPTY; //we can reuse this square if we were on a hole
 		this.squares_visited--; //avoid double-counting the square
 	}		
 	else
