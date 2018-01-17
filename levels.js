@@ -44,7 +44,7 @@ const START = 1;
 const FINISH = 2;
 const VISITED = 3;
 const WALL = 4;
-const TWO_STEP = 5;
+const HOLE = 5;
 const WRAP_LEFT = 6;
 const WRAP_RIGHT = 7;
 const WRAP_UP = 8;
@@ -79,25 +79,48 @@ var walls_layout = [
 	];
 var walls_l = new Level(walls_width, walls_height, walls_layout);
 
-//Intro to two-step squares
-var twostep_width = 3;
-var twostep_height = 3;
-var twostep_layout = [
-	[WALL,  FINISH,   WALL],
-	[START, TWO_STEP, EMPTY],
-	[WALL,  EMPTY,    EMPTY]
+//Five by five empty with two walls
+var fiveempty_width = 5;
+var fiveempty_height = 5;
+var fiveempty_layout = [
+	[EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
+	[EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
+	[EMPTY, EMPTY, WALL,  WALL,  EMPTY],
+	[EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
+	[START, EMPTY, EMPTY, EMPTY, FINISH]
 	];
-var twostep_l = new Level(twostep_width, twostep_height, twostep_layout);
+var fiveempty_l = new Level(fiveempty_width, fiveempty_height, fiveempty_layout);
+
+//Intro to holes
+var hole_width = 3;
+var hole_height = 3;
+var hole_layout = [
+	[WALL,  FINISH, WALL],
+	[START, HOLE,   EMPTY],
+	[WALL,  EMPTY,  EMPTY]
+	];
+var hole_l = new Level(hole_width, hole_height, hole_layout);
 
 //Backtracking
 var backtrack_width = 7;
 var backtrack_height = 3;
 var backtrack_layout = [
-	[EMPTY, EMPTY, EMPTY,    EMPTY, TWO_STEP, EMPTY,  EMPTY],
-	[EMPTY, WALL,  EMPTY,    WALL,  EMPTY,    WALL,   EMPTY],
-	[START, EMPTY, TWO_STEP, EMPTY, EMPTY,    FINISH, EMPTY]
+	[EMPTY, EMPTY, EMPTY, EMPTY, HOLE,  EMPTY,  EMPTY],
+	[EMPTY, WALL,  EMPTY, WALL,  EMPTY, WALL,   EMPTY],
+	[START, EMPTY, HOLE,  EMPTY, EMPTY, FINISH, EMPTY]
 	];
 var backtrack_l = new Level(backtrack_width, backtrack_height, backtrack_layout);
+
+//Hole block
+var holeblock_width = 4;
+var holeblock_height = 4;
+var holeblock_layout = [
+	[EMPTY, EMPTY, FINISH, START],
+	[EMPTY, HOLE,  HOLE,   EMPTY],
+	[EMPTY, HOLE,  HOLE,   EMPTY],
+	[EMPTY, EMPTY, EMPTY,  EMPTY]
+	];
+var holeblock_l = new Level(holeblock_width, holeblock_height, holeblock_layout);
 
 //Intro to wrapping
 var wrap_width = 3;
@@ -113,9 +136,9 @@ var wrap_l = new Level(wrap_width, wrap_height, wrap_layout);
 var extrawrap_width = 5;
 var extrawrap_height = 4;
 var extrawrap_layout = [
-	[WRAP_LEFT, START, WRAP_UP, EMPTY, WRAP_RIGHT],
-	[WALL, WALL, WALL, EMPTY, EMPTY],
-	[EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
+	[WRAP_LEFT, START, WRAP_UP,   EMPTY,  WRAP_RIGHT],
+	[WALL,      WALL,  WALL,      EMPTY,  EMPTY],
+	[EMPTY,     EMPTY, EMPTY,     EMPTY,  EMPTY],
 	[WRAP_LEFT, EMPTY, WRAP_DOWN, FINISH, WRAP_RIGHT]
 	];
 var extrawrap_l = new Level(extrawrap_width, extrawrap_height, extrawrap_layout);
@@ -124,11 +147,11 @@ var extrawrap_l = new Level(extrawrap_width, extrawrap_height, extrawrap_layout)
 var allwrap_width = 5;
 var allwrap_height = 5;
 var allwrap_layout = [
-	[FINISH, WRAP_UP, EMPTY, WRAP_UP, EMPTY,],
-	[WRAP_LEFT, WALL, EMPTY, WALL, WRAP_RIGHT],
-	[EMPTY, EMPTY, TWO_STEP, EMPTY, START],
-	[WRAP_LEFT, WALL, EMPTY, WALL, WRAP_RIGHT],
-	[WALL, WRAP_DOWN, EMPTY, WRAP_DOWN, EMPTY]
+	[FINISH,    WRAP_UP,   EMPTY, WRAP_UP,   EMPTY,],
+	[WRAP_LEFT, WALL,      EMPTY, WALL,      WRAP_RIGHT],
+	[EMPTY,     EMPTY,     HOLE,  EMPTY,     START],
+	[WRAP_LEFT, WALL,      EMPTY, WALL,      WRAP_RIGHT],
+	[WALL,      WRAP_DOWN, EMPTY, WRAP_DOWN, EMPTY]
 	];
 var allwrap_l = new Level(allwrap_width, allwrap_height, allwrap_layout);
 
@@ -137,8 +160,10 @@ var levels = [
 	start_l,
 	turns_l,
 	walls_l,
-	twostep_l,
+	fiveempty_l,	
+	hole_l,
 	backtrack_l,
+	holeblock_l,
 	wrap_l,
 	extrawrap_l,
 	allwrap_l
@@ -162,7 +187,7 @@ function getColor(type)
 			return '#eeeeee';
 		case WALL:
 			return '#000000';
-		case TWO_STEP:
+		case HOLE:
 			return '#aaaaaa';
 	}
 }
