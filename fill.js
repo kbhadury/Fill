@@ -240,6 +240,7 @@ function drawCredits()
 //Runs the win animation by calling spinBoard
 function animateWin()
 {
+	can_move = false;
 	can_reset = false; //do animation without interruption
 	board_rotation = 0;
 	board_opacity = 1;
