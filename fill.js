@@ -20,9 +20,11 @@ function init()
 	//Set up board
 	canvas_elem = document.getElementById('gameboard');
 	board_ctx = canvas_elem.getContext('2d');
-	level_num = 0;
 	player = new Player(0, 0); //this gets overwritten in reset()
 	is_level_select = false;
+	
+	//Read last completed level
+	level_num = getLastLevelAccessed();
 	
 	//Set up level selection
 	var levelselect_width = 6;
@@ -37,11 +39,14 @@ function init()
 			levelselect_layout[r].push(WALL);
 		}
 	}
-	//Fill in start, first level, and end squares
+	//Fill in start and end squares along with completed levels
 	addToLevel(levelselect_width, levelselect_layout, 0, START);
-	addToLevel(levelselect_width, levelselect_layout, 1, -1);
 	var finish = mapIndexToSnake(levels.length+2, levelselect_width); //plus 2 for levelselect level
 	addToLevel(levelselect_width, levelselect_layout, finish, FINISH);
+	for(var i = 0; i <= level_num; ++i)
+	{
+		addToLevel(levelselect_width, levelselect_layout, i+1, -1*(i+1));
+	}
 	var levelselect_l = new Level(levelselect_width, levelselect_height, levelselect_layout);
 	//Push to levels array
 	levels.push(levelselect_l);
@@ -98,6 +103,22 @@ function mapPlayerToLevel(p_row, p_col, width)
 function addToLevel(width, layout, position, value)
 {
 	layout[Math.floor(position/width)][position%width] = value;
+}
+
+//Read last level accessed from local storage
+function getLastLevelAccessed()
+{
+	var local_storage = window.localStorage;
+	var last_access = local_storage.getItem("lastLevelAccessed");
+	if(last_access == null) return 0;
+	else return parseInt(last_access);
+}
+
+//Set last level accessed in local storage
+function setLastLevelAccessed(value)
+{
+	var local_storage = window.localStorage;
+	local_storage.setItem("lastLevelAccessed", ""+value);
 }
 
 //-----END CONDITIONS-----//
@@ -247,6 +268,10 @@ function animateWin()
 	if(!is_level_select) //add new level to selection screen if we're not on the selection screen
 	{
 		++level_num;
+		if(level_num > getLastLevelAccessed()) //update local storage if we've advanced
+		{
+			setLastLevelAccessed(level_num);
+		}
 		var levelselect = levels[levels.length-1];
 		var squareToEdit = mapIndexToSnake(level_num+1, levelselect.width); //plus one bc levels start at 1
 		addToLevel(levelselect.width, levelselect.layout, squareToEdit, -1*(level_num+1));
