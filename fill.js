@@ -12,16 +12,92 @@ var cur_level;
 var player;
 var can_move;
 var can_reset;
+var is_level_select;
 
 //Called when the page is loaded
 function init()
 {
+	//Set up board
 	canvas_elem = document.getElementById('gameboard');
 	board_ctx = canvas_elem.getContext('2d');
 	level_num = 0;
+	player = new Player(0, 0); //this gets overwritten in reset()
+	is_level_select = false;
+	
+	//Set up level selection
+	var levelselect_width = 6;
+	var levelselect_height = Math.ceil((levels.length+3)/levelselect_width); //add 3 for start, finsh, and levelselect level
+	var levelselect_layout = [];
+	//Fill with walls
+	for(var r = 0; r < levelselect_height; ++r)
+	{
+		levelselect_layout.push([]); //push row
+		for(var c = 0; c < levelselect_width; ++c)
+		{
+			levelselect_layout[r].push(WALL);
+		}
+	}
+	//Fill in start, first level, and end squares
+	addToLevel(levelselect_width, levelselect_layout, 0, START);
+	addToLevel(levelselect_width, levelselect_layout, 1, -1);
+	var finish = mapIndexToSnake(levels.length+2, levelselect_width); //plus 2 for levelselect level
+	addToLevel(levelselect_width, levelselect_layout, finish, FINISH);
+	var levelselect_l = new Level(levelselect_width, levelselect_height, levelselect_layout);
+	//Push to levels array
+	levels.push(levelselect_l);
+	
+	//Set up font
+	board_ctx.textAlign = 'center';
+	board_ctx.textBaseline = 'middle';
+	board_ctx.font = '24px monospace';
+	
+	//Add level counter
 	document.getElementById('levelcounter').innerHTML = (level_num+1) + ' / ' + levels.length;
-	player = new Player(0, 0); //This gets overwritten in reset()
+	
+	//Go!
 	resetAndRedraw();
+}
+
+//-----CONVENIENCE FUNCTIONS-----//
+
+/*
+Map positions from this:
+0 1 2 3 4 5 6 7 8 9...
+
+...to this...
+
+0 1 2 3 7 6 5 4 8 9...
+
+which makes a snake:
+
+0 1 2 3
+7 6 5 4
+8 9...
+*/
+function mapIndexToSnake(position, width)
+{
+	var row = Math.floor(position/width);
+	if(row % 2 == 0)
+	{
+		return position;
+	}
+	else
+	{
+		return 3*width*row - 1 - position;
+	}
+}
+
+//Map player pos to level on level select screen
+function mapPlayerToLevel(p_row, p_col, width)
+{
+	var position = p_row*width + p_col;
+	return mapIndexToSnake(position, width); //same function undoes mapping
+}
+
+//Add something to the level selection screen
+function addToLevel(width, layout, position, value)
+{
+	layout[Math.floor(position/width)][position%width] = value;
 }
 
 //-----END CONDITIONS-----//
@@ -53,7 +129,7 @@ function checkWinAndRedraw()
 	{
 		can_move = false;
 		
-		if(player.squares_visited == cur_level.num_spaces) //valid win
+		if(player.squares_visited >= cur_level.num_spaces) //valid win, the >= is a hack to make the level select work
 		{
 			if(level_num == levels.length-1) //finished!
 			{
@@ -83,8 +159,6 @@ function draw()
 {
 	//Clear canvas
 	board_ctx.clearRect(0, 0, canvas_elem.width, canvas_elem.height);
-	
-	//board_ctx.strokeRect(0, 0, canvas_elem.width, canvas_elem.height); //DEBUG
 	
 	//Translate board to center of canvas
 	board_ctx.save(); //save context
@@ -134,6 +208,13 @@ function draw()
 			{
 				board_ctx.fillRect(10+c*SQUARE_SIZE, 10+r*SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
 			}
+			
+			//For level selection
+			if(type < 0)
+			{
+				board_ctx.fillStyle = '#aaaaaa';
+				board_ctx.fillText(-1*type, 10+c*SQUARE_SIZE + SQUARE_SIZE/2, 10+r*SQUARE_SIZE + SQUARE_SIZE/2); //write level number
+			}
 		}
 	}
 	
@@ -144,6 +225,7 @@ function draw()
 	board_ctx.restore(); //restore context
 }
 
+//Draw end credits
 function drawCredits()
 {
 	//Clear canvas
@@ -152,9 +234,6 @@ function drawCredits()
 	//Draw credits
 	board_ctx.globalAlpha = board_opacity;
 	board_ctx.fillStyle = '#aaaaaa';
-	board_ctx.textAlign = 'center';
-	board_ctx.textBaseline = 'middle';
-	board_ctx.font = '24px monospace';
 	board_ctx.fillText('a game by kiran bhadury', 200, 50);
 }
 
@@ -164,6 +243,13 @@ function animateWin()
 	can_reset = false; //do animation without interruption
 	board_rotation = 0;
 	board_opacity = 1;
+	if(!is_level_select) //add new level to selection screen if we're not on the selection screen
+	{
+		++level_num;
+		var levelselect = levels[levels.length-1];
+		var squareToEdit = mapIndexToSnake(level_num+1, levelselect.width); //plus one bc levels start at 1
+		addToLevel(levelselect.width, levelselect.layout, squareToEdit, -1*(level_num+1));
+	}
 	window.win_signal = window.setInterval(spinBoard, 20);
 }
 function spinBoard()
@@ -174,7 +260,7 @@ function spinBoard()
 	{
 		board_opacity = 0;
 		window.clearInterval(window.win_signal);
-		++level_num;
+		//++level_num;
 		document.getElementById('levelcounter').innerHTML = (level_num+1) + ' / ' + levels.length;
 		resetAndRedraw();
 	}
@@ -328,8 +414,21 @@ document.addEventListener('keypress', function(event){
 				player.moveTo(player.row, player.col+1);
 				break;
 			case 'k': //DEBUG
-				++level_num;
-				resetAndRedraw();
+				level_num = 3;
+				animateWin();
+				break;
+			case 'l':
+				is_level_select = true;
+				level_num = levels.length - 1;
+				animateWin();
+				break;
+			case 'x':
+				if(!is_level_select) return;
+				var level = mapPlayerToLevel(player.row, player.col, levels[levels.length-1].width);
+				if(level == 0) return; //can't select start square
+				level_num = level - 1;
+				animateWin();
+				is_level_select = false;
 				break;
 		}
 	}
