@@ -167,7 +167,6 @@ var levels = [
 	wrap_l,
 	extrawrap_l,
 	allwrap_l
-	//levelselect_l will be the last level
 	];
 
 //Returns the color that corresponds with each type of square
@@ -190,7 +189,5 @@ function getColor(type)
 			return '#000000';
 		case HOLE:
 			return '#aaaaaa';
-		default: //for numbered spaces
-			return '#eeeeee';
 	}
 }

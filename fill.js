@@ -12,7 +12,6 @@ var cur_level;
 var player;
 var can_move;
 var can_reset;
-var is_level_select;
 
 //Called when the page is loaded
 function init()
@@ -21,35 +20,10 @@ function init()
 	canvas_elem = document.getElementById('gameboard');
 	board_ctx = canvas_elem.getContext('2d');
 	player = new Player(0, 0); //this gets overwritten in reset()
-	is_level_select = false;
 	
 	//Read last completed level
-	level_num = getLastLevelAccessed();
-	
-	//Set up level selection
-	var levelselect_width = 6;
-	var levelselect_height = Math.ceil((levels.length+3)/levelselect_width); //add 3 for start, finsh, and levelselect level
-	var levelselect_layout = [];
-	//Fill with walls
-	for(var r = 0; r < levelselect_height; ++r)
-	{
-		levelselect_layout.push([]); //push row
-		for(var c = 0; c < levelselect_width; ++c)
-		{
-			levelselect_layout[r].push(WALL);
-		}
-	}
-	//Fill in start and end squares along with completed levels
-	addToLevel(levelselect_width, levelselect_layout, 0, START);
-	var finish = mapIndexToSnake(levels.length+2, levelselect_width); //plus 2 for levelselect level
-	addToLevel(levelselect_width, levelselect_layout, finish, FINISH);
-	for(var i = 0; i <= level_num; ++i)
-	{
-		addToLevel(levelselect_width, levelselect_layout, i+1, -1*(i+1));
-	}
-	var levelselect_l = new Level(levelselect_width, levelselect_height, levelselect_layout);
-	//Push to levels array
-	levels.push(levelselect_l);
+	//level_num = getLastLevelAccessed();
+	level_num = 0; //debug
 	
 	//Set up font
 	board_ctx.textAlign = 'center';
@@ -63,47 +37,7 @@ function init()
 	resetAndRedraw();
 }
 
-//-----CONVENIENCE FUNCTIONS-----//
-
-/*
-Map positions from this:
-0 1 2 3 4 5 6 7 8 9...
-
-...to this...
-
-0 1 2 3 7 6 5 4 8 9...
-
-which makes a snake:
-
-0 1 2 3
-7 6 5 4
-8 9...
-*/
-function mapIndexToSnake(position, width)
-{
-	var row = Math.floor(position/width);
-	if(row % 2 == 0)
-	{
-		return position;
-	}
-	else
-	{
-		return 3*width*row - 1 - position;
-	}
-}
-
-//Map player pos to level on level select screen
-function mapPlayerToLevel(p_row, p_col, width)
-{
-	var position = p_row*width + p_col;
-	return mapIndexToSnake(position, width); //same function undoes mapping
-}
-
-//Add something to the level selection screen
-function addToLevel(width, layout, position, value)
-{
-	layout[Math.floor(position/width)][position%width] = value;
-}
+//-----STORAGE FUNCTIONS-----//
 
 //Read last level accessed from local storage
 function getLastLevelAccessed()
@@ -150,7 +84,7 @@ function checkWinAndRedraw()
 	{
 		can_move = false;
 		
-		if(player.squares_visited >= cur_level.num_spaces) //valid win, the >= is a hack to make the level select work
+		if(player.squares_visited == cur_level.num_spaces)
 		{
 			if(level_num == levels.length-1) //finished!
 			{
@@ -229,13 +163,6 @@ function draw()
 			{
 				board_ctx.fillRect(10+c*SQUARE_SIZE, 10+r*SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
 			}
-			
-			//For level selection
-			if(type < 0)
-			{
-				board_ctx.fillStyle = '#aaaaaa';
-				board_ctx.fillText(-1*type, 10+c*SQUARE_SIZE + SQUARE_SIZE/2, 10+r*SQUARE_SIZE + SQUARE_SIZE/2); //write level number
-			}
 		}
 	}
 	
@@ -265,17 +192,13 @@ function animateWin()
 	can_reset = false; //do animation without interruption
 	board_rotation = 0;
 	board_opacity = 1;
-	if(!is_level_select) //add new level to selection screen if we're not on the selection screen
+
+	++level_num;
+	if(level_num > getLastLevelAccessed()) //update local storage if we've advanced
 	{
-		++level_num;
-		if(level_num > getLastLevelAccessed()) //update local storage if we've advanced
-		{
-			setLastLevelAccessed(level_num);
-		}
-		var levelselect = levels[levels.length-1];
-		var squareToEdit = mapIndexToSnake(level_num+1, levelselect.width); //plus one bc levels start at 1
-		addToLevel(levelselect.width, levelselect.layout, squareToEdit, -1*(level_num+1));
+		setLastLevelAccessed(level_num);
 	}
+
 	window.win_signal = window.setInterval(spinBoard, 20);
 }
 function spinBoard()
@@ -421,7 +344,10 @@ function moveTo(next_row, next_col)
 
 //Keyboard input
 document.addEventListener('keypress', function(event){
-	if(event.key == 'r' && can_reset) resetAndRedraw();
+	if(event.key == 'r' && can_reset)
+	{
+		resetAndRedraw();
+	}
 	else
 	{
 		if(!can_move) return;
@@ -439,22 +365,8 @@ document.addEventListener('keypress', function(event){
 			case 'd':
 				player.moveTo(player.row, player.col+1);
 				break;
-			case 'k': //DEBUG
-				level_num = 3;
+			case 'k': //debug
 				animateWin();
-				break;
-			case 'l':
-				is_level_select = true;
-				level_num = levels.length - 1;
-				animateWin();
-				break;
-			case 'x':
-				if(!is_level_select) return;
-				var level = mapPlayerToLevel(player.row, player.col, levels[levels.length-1].width);
-				if(level == 0) return; //can't select start square
-				level_num = level - 1;
-				animateWin();
-				is_level_select = false;
 				break;
 		}
 	}
