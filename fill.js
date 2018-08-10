@@ -61,7 +61,8 @@ function setLastLevelAccessed(value)
 function resetAndRedraw()
 {	
 	//Reset board
-	cur_level = JSON.parse(JSON.stringify(levels[level_num])); //Deep copy level
+	//cur_level = JSON.parse(JSON.stringify(levels[level_num])); //Deep copy level
+	cur_level = generateLevel('uhoh');
 	board_rotation = 0;
 	board_opacity = 1; //opaque
 	border_color = '#000000';

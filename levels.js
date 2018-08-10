@@ -49,6 +49,7 @@ const WRAP_LEFT = 6;
 const WRAP_RIGHT = 7;
 const WRAP_UP = 8;
 const WRAP_DOWN = 9;
+const UNUSED = 10; //for level generation
 
 //Starting out
 var start_width = 5;
