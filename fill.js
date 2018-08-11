@@ -34,7 +34,14 @@ function init()
 	board_ctx.font = '24px monospace';
 	
 	//Add level counter
-	document.getElementById('levelcounter').innerHTML = (level_num+1);
+	if(level_num < levels.length)
+	{
+		document.getElementById('levelcounter').innerHTML = "Tutorial " + (level_num+1);
+	}
+	else
+	{
+		document.getElementById('levelcounter').innerHTML = (level_num+1);
+	}
 	
 	//Go!
 	resetAndRedraw();
@@ -224,8 +231,14 @@ function spinBoard()
 	{
 		board_opacity = 0;
 		window.clearInterval(window.win_signal);
-		//++level_num;
-		document.getElementById('levelcounter').innerHTML = (level_num+1);
+		if(level_num < levels.length)
+		{
+			document.getElementById('levelcounter').innerHTML = "Tutorial " + (level_num+1);
+		}
+		else
+		{
+			document.getElementById('levelcounter').innerHTML = (level_num+1);
+		}
 		resetAndRedraw();
 	}
 	else
