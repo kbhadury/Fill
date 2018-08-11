@@ -9,6 +9,7 @@ const SQUARE_SIZE = 30;
 //Game data
 var level_num;
 var cur_level;
+var cached_level;
 var player;
 var can_move;
 var can_reset;
@@ -22,8 +23,10 @@ function init()
 	player = new Player(0, 0); //this gets overwritten in reset()
 	
 	//Read last completed level
-	//level_num = getLastLevelAccessed();
-	level_num = 0; //debug
+	level_num = getLastLevelAccessed();
+	
+	//Clear cache
+	cached_level = 0;
 	
 	//Set up font
 	board_ctx.textAlign = 'center';
@@ -31,7 +34,7 @@ function init()
 	board_ctx.font = '24px monospace';
 	
 	//Add level counter
-	document.getElementById('levelcounter').innerHTML = (level_num+1) + ' / ' + levels.length;
+	document.getElementById('levelcounter').innerHTML = (level_num+1);
 	
 	//Go!
 	resetAndRedraw();
@@ -61,8 +64,18 @@ function setLastLevelAccessed(value)
 function resetAndRedraw()
 {	
 	//Reset board
-	//cur_level = JSON.parse(JSON.stringify(levels[level_num])); //Deep copy level
-	cur_level = generateLevel('uhoh');
+	if(cached_level === 0)
+	{
+		if(level_num < levels.length)
+		{
+			cached_level = levels[level_num];
+		}
+		else
+		{
+			cached_level = generateLevel('seed' + level_num);
+		}
+	}
+	cur_level = JSON.parse(JSON.stringify(cached_level)); //Deep copy cached level
 	board_rotation = 0;
 	board_opacity = 1; //opaque
 	border_color = '#000000';
@@ -199,6 +212,7 @@ function animateWin()
 	{
 		setLastLevelAccessed(level_num);
 	}
+	cached_level = 0; //invalidate cache
 
 	window.win_signal = window.setInterval(spinBoard, 20);
 }
@@ -211,7 +225,7 @@ function spinBoard()
 		board_opacity = 0;
 		window.clearInterval(window.win_signal);
 		//++level_num;
-		document.getElementById('levelcounter').innerHTML = (level_num+1) + ' / ' + levels.length;
+		document.getElementById('levelcounter').innerHTML = (level_num+1);
 		resetAndRedraw();
 	}
 	else
@@ -368,6 +382,9 @@ document.addEventListener('keypress', function(event){
 				break;
 			case 'k': //debug
 				animateWin();
+				break;
+			case 'c': //debug
+				cached_level = 0;
 				break;
 		}
 	}

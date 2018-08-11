@@ -4,6 +4,8 @@ var level_width;
 var layout;
 const MIN_DIM = 3;
 const MAX_DIM = 8;
+const MIN_COVERING = 0.5;
+const MAX_COVERING = 1;
 
 //Movement data
 const UP = 0;
@@ -28,16 +30,16 @@ function generateLevel(seed)
 	level_width = randToRangeInt(rng.quick(), MIN_DIM, MAX_DIM);
 	var start_row = randToRangeInt(rng.quick(), 0, level_height);
 	var start_col = randToRangeInt(rng.quick(), 0, level_width);
-	var min_steps = Math.floor(0.75 * (level_height * level_width));
-	var max_steps = level_height * level_width;
+	var min_steps = Math.floor(MIN_COVERING * (level_height * level_width));
+	var max_steps = Math.floor(MAX_COVERING * (level_height * level_width));
 	var num_steps = randToRangeInt(rng.quick(), min_steps, max_steps);
 	
 	//Generate empty board
 	layout = [];
-	for(i = 0; i < level_height; ++i)
+	for(var i = 0; i < level_height; ++i)
 	{
 		var row = [];
-		for(j = 0; j < level_width; ++j)
+		for(var j = 0; j < level_width; ++j)
 		{
 			row.push(UNUSED);
 		}
@@ -75,8 +77,6 @@ function generateLevel(seed)
 			continue; //try again
 		}
 		
-		console.log(direction); //strictly for cheating purposes
-		
 		//Reset valid directions
 		available_directions = [UP, DOWN, LEFT, RIGHT];
 		
@@ -102,7 +102,8 @@ function generateLevel(seed)
 		++step_count;
 	} //while loop
 	
-	console.log(path);
+	console.log(path); //just to verify that it's actually solvable
+	
 	//Remove last square from path so we won't backtrack on ourself
 	path.pop();
 	
@@ -124,10 +125,15 @@ function generateLevel(seed)
 	}
 	layout[current_pos.row][current_pos.col] = FINISH;
 	
+	//Remove excessive unused spaces
+	trimLayout();
+	level_height = layout.length;
+	level_width = layout[0].length;
+	
 	//Fill in remaining spaces with walls
-	for(r = 0; r < level_height; ++r)
+	for(var r = 0; r < level_height; ++r)
 	{
-		for(c = 0; c < level_width; ++c)
+		for(var c = 0; c < level_width; ++c)
 		{
 			if(layout[r][c] == UNUSED)
 			{
@@ -181,7 +187,7 @@ function isValidSquare(pos)
 	return true;
 }
 
-//Check if the given square is UNUSED
+//Check if the given square is unused
 function isUnusedSquare(pos)
 {
 	//Check if in bounds
@@ -193,7 +199,7 @@ function isUnusedSquare(pos)
 	return (layout[pos.row][pos.col] == UNUSED);
 }
 
-//Returns a random direction towards an UNUSED square
+//Returns a random direction towards an unused square
 //If there are none, returns -1
 function findUnusedDirection(pos)
 {
@@ -211,6 +217,73 @@ function findUnusedDirection(pos)
 	{
 		return available_directions[randToRangeInt(rng.quick(), 0, available_directions.length)];
 	}
+}
+
+//Test if a row in the layout contains all unused squares
+function isRowUnused(row)
+{
+	test_row = layout[row];
+	for(var i = 0; i < test_row.length; ++i)
+	{
+		if(test_row[i] != UNUSED)
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+//Test if a column in the layout contains all unused squares
+function isColUnused(col)
+{
+	for(var i = 0; i < layout.length; ++i)
+	{
+		if(layout[i][col] != UNUSED)
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+//Removes unused rows and columns from layout
+function trimLayout()
+{
+	//Trim top
+	var first_real_row = 0;
+	while(isRowUnused(first_real_row))
+	{
+		++first_real_row;
+	}
+	layout.splice(0, first_real_row);
+	
+	//Trim bottom
+	var last_real_row = layout.length - 1;
+	while(isRowUnused(last_real_row))
+	{
+		--last_real_row;
+	}
+	layout.splice(last_real_row + 1); //deletes to end of layout
+	
+	//Trim left
+	var first_real_col = 0;
+	while(isColUnused(first_real_col))
+	{
+		++first_real_col;
+	}
+	layout.forEach(function(row){
+			row.splice(0, first_real_col);
+		});
+		
+	//Trim right
+	var last_real_col = layout[0].length - 1;
+	while(isColUnused(last_real_col))
+	{
+		--last_real_col;
+	}
+	layout.forEach(function(row){
+			row.splice(last_real_col + 1);
+		});
 }
 
 //Takes a random float between 0 and 1 and scales to an int between lowerBound (incl) and upperBound (excl)
