@@ -107,14 +107,7 @@ function checkWinAndRedraw()
 		
 		if(player.squares_visited == cur_level.num_spaces)
 		{
-			if(level_num == levels.length-1) //finished!
-			{
-				animateEnd();
-			}
-			else
-			{
-				animateWin();
-			}
+			animateWin();
 		}
 		else //didn't touch all spaces
 		{
