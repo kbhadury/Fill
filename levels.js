@@ -51,6 +51,30 @@ const WRAP_UP = 8;
 const WRAP_DOWN = 9;
 const UNUSED = 10; //for level generation
 
+//Returns true if the square can be moved onto
+function isOpenSquare(square)
+{
+	switch(square)
+	{
+		case EMPTY:
+		case FINISH:
+		case HOLE:
+		case WRAP_LEFT:
+		case WRAP_RIGHT:
+		case WRAP_UP:
+		case WRAP_DOWN:
+			return true;
+		default:
+			return false;
+	}
+}
+
+//Returns true if the given square is one of the wrap options
+function isWrapSquare(square)
+{
+	return (square == WRAP_UP || square == WRAP_DOWN || square == WRAP_LEFT || square == WRAP_RIGHT);
+}
+
 //Starting out
 var start_width = 5;
 var start_height = 1;

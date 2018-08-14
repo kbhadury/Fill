@@ -117,6 +117,12 @@ function checkWinAndRedraw()
 	}
 	else //not on finish square
 	{
+		//Check if player is stuck after making a valid move
+		if(!player.canMove())
+		{
+			can_move = false;
+			border_color = '#ff0000';
+		}
 		draw(); //draw board as usual
 	}
 }
@@ -187,18 +193,6 @@ function draw()
 	board_ctx.restore(); //restore context
 }
 
-//Draw end credits
-function drawCredits()
-{
-	//Clear canvas
-	board_ctx.clearRect(0, 0, canvas_elem.width, canvas_elem.height);
-	
-	//Draw credits
-	board_ctx.globalAlpha = board_opacity;
-	board_ctx.fillStyle = '#aaaaaa';
-	board_ctx.fillText('a game by kiran bhadury', 200, 50);
-}
-
 //Runs the win animation by calling spinBoard
 function animateWin()
 {
@@ -259,48 +253,16 @@ function fadeinBoard()
 	draw();
 }
 
-//Runs the ending animation by calling spinEnd
-function animateEnd()
+//-----BOARD INFO-----//
+function isInBounds(row, col)
 {
-	can_move = false;
-	can_reset = false;
-	board_rotation = 0;
-	board_opacity = 1;
-	border_color = '#00ff00';
-	window.end_signal = window.setInterval(spinEnd, 20);
-}
-function spinEnd()
-{
-	board_rotation += 0.01 + 0.03*board_rotation; //speeds up as it rotates
-	board_opacity -= 0.005;
-	if(board_opacity < 0.03) //end animation
+	if(row >= cur_level.height || row < 0 || col >= cur_level.width || col < 0)
 	{
-		board_opacity = 0;
-		window.clearInterval(window.end_signal);
-		animateCredits();
+		return false;
 	}
 	else
 	{
-		draw();
-	}
-}
-function animateCredits()
-{
-	board_opacity = 0;
-	window.credits_signal = window.setInterval(fadeinCredits, 20);
-}
-function fadeinCredits()
-{
-	board_opacity += 0.01;
-	if(board_opacity > 1)
-	{
-		board_opacity = 1;
-		window.clearInterval(window.credits_signal);
-		drawCredits();
-	}
-	else
-	{
-		drawCredits();
+		return true;
 	}
 }
 
@@ -314,9 +276,11 @@ function Player(start_row, start_col)
 	this.col = start_col;
 	this.squares_visited = 1; //we've visited the square we start on
 	this.moveTo = moveTo;
+	this.canMove = canMove;
 }
 
 //Attempt to move player to specified position
+//Also checks if the player is stuck
 function moveTo(next_row, next_col)
 {
 	var cur_square = cur_level.layout[this.row][this.col];
@@ -332,9 +296,15 @@ function moveTo(next_row, next_col)
 	}
 	
 	//Check if valid move
-	if(next_row >= cur_level.height || next_row < 0 || next_col >= cur_level.width || next_col < 0) return;
+	if(!isInBounds(next_row, next_col))
+	{
+		return;
+	}
 	var next_square = cur_level.layout[next_row][next_col];
-	if(next_square == WALL || next_square == VISITED || next_square == START) return;
+	if(next_square == WALL || next_square == VISITED || next_square == START)
+	{
+		return;
+	}
 	
 	//If we make it here, it's a valid move
 	if(cur_square == HOLE)
@@ -363,13 +333,32 @@ function moveTo(next_row, next_col)
 	this.squares_visited++; //update number of squares visited
 }
 
+//Returns true if the player has available moves left
+function canMove()
+{
+	//If we're on a wrap square, we must at least be able to move to its partner
+	if(isWrapSquare(cur_level.layout[this.row][this.col]))
+	{
+		return true;
+	}
+	
+	//If we're not on a wrap square, only check immediate neighbors (don't do any wrapping)
+	if(isInBounds(this.row + 1, this.col) && isOpenSquare(cur_level.layout[this.row + 1][this.col])) return true;
+	if(isInBounds(this.row - 1, this.col) && isOpenSquare(cur_level.layout[this.row - 1][this.col])) return true;
+	if(isInBounds(this.row, this.col + 1) && isOpenSquare(cur_level.layout[this.row][this.col + 1])) return true;
+	if(isInBounds(this.row, this.col - 1) && isOpenSquare(cur_level.layout[this.row][this.col - 1])) return true;
+	
+	return false;
+	
+}
+
 //Keyboard input
 document.addEventListener('keypress', function(event){
 	if(event.key == 'r' && can_reset)
 	{
 		resetAndRedraw();
 	}
-	else
+	else //try to move, check win, and redraw
 	{
 		if(!can_move) return;
 		switch(event.key)
