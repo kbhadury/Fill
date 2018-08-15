@@ -39,15 +39,16 @@ function Level(w, h, l)
 }
 
 //Square data
+//ONLY add constants to the END of this list
 const EMPTY = 0;
 const START = 1;
 const FINISH = 2;
 const VISITED = 3;
 const WALL = 4;
 const HOLE = 5;
-const WRAP_LEFT = 6;
+const WRAP_UP = 6;
 const WRAP_RIGHT = 7;
-const WRAP_UP = 8;
+const WRAP_LEFT = 8;
 const WRAP_DOWN = 9;
 const UNUSED = 10; //for level generation
 
@@ -73,6 +74,12 @@ function isOpenSquare(square)
 function isWrapSquare(square)
 {
 	return (square == WRAP_UP || square == WRAP_DOWN || square == WRAP_LEFT || square == WRAP_RIGHT);
+}
+
+//Generic bounds check
+function isInBounds(pos, height, width)
+{
+	return (pos.row >= 0 && pos.row < height && pos.col >= 0 && pos.col < width);
 }
 
 //Starting out

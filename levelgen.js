@@ -2,16 +2,21 @@
 var level_height;
 var level_width;
 var layout;
-const MIN_DIM = 3;
-const MAX_DIM = 8;
+const MIN_HEIGHT = 3;
+const MAX_HEIGHT = 8;
+const MIN_WIDTH = 3;
+const MAX_WIDTH = 8;
 const MIN_COVERING = 0.5;
 const MAX_COVERING = 1;
 
 //Movement data
+//Do NOT edit values w/o checking levels.js
 const UP = 0;
-const DOWN = 1;
+const RIGHT = 1;
 const LEFT = 2;
-const RIGHT = 3;
+const DOWN = 3;
+const WRAP = 6; //map to square consts, saves us some if-statements
+const MAGIC = 3; //I know this is a hack please forgive me
 
 //Random controller
 var rng;
@@ -19,15 +24,14 @@ var rng;
 //Generate a random level given a seed
 //The seed ensures that we can generate the same random levels each time
 //Returns a Level object
-//TODO: handle wrapping squares
 function generateLevel(seed)
 {
 	//Init random number generator using David Bau's seedrandom
 	rng = new Math.seedrandom(seed);
 	
 	//Init basic level info
-	level_height = randToRangeInt(rng.quick(), MIN_DIM, MAX_DIM);
-	level_width = randToRangeInt(rng.quick(), MIN_DIM, MAX_DIM);
+	level_height = randToRangeInt(rng.quick(), MIN_HEIGHT, MAX_HEIGHT);
+	level_width = randToRangeInt(rng.quick(), MIN_WIDTH, MAX_WIDTH);
 	var start_row = randToRangeInt(rng.quick(), 0, level_height);
 	var start_col = randToRangeInt(rng.quick(), 0, level_width);
 	var min_steps = Math.floor(MIN_COVERING * (level_height * level_width));
@@ -56,7 +60,7 @@ function generateLevel(seed)
 	
 	//Start generating moves
 	var step_count = 0;
-	var available_directions = [UP, DOWN, LEFT, RIGHT];
+	var available_directions = [UP, RIGHT, LEFT, DOWN];
 	while(step_count < num_steps)
 	{
 		//Check if we're stuck
@@ -66,32 +70,53 @@ function generateLevel(seed)
 		}
 		
 		//Choose a new move
+		//Side note: current_pos will never be on an unused square
 		var next_pos;
+		var doWrap = false; //initially try moving without wrapping
 		var index_chosen = randToRangeInt(rng.quick(), 0, available_directions.length);
 		var direction = available_directions[index_chosen];
-		next_pos = getPositionInDirection(current_pos, direction);
-		if(!isValidSquare(next_pos)) //if not a valid move...
+		next_pos = getPositionInDirection(current_pos, direction, doWrap);
+		if(!isInBounds(next_pos)) //if out of bounds...
+		{
+			if(layout[current_pos.row][current_pos.col] == EMPTY) //if wrapping is an option, do so
+			{
+				doWrap = true;
+				next_pos = getPositionInDirection(current_pos, direction, doWrap);
+			}
+			else //no moves, try another direction
+			{
+				//Remove direction from available directions list
+				available_directions.splice(index_chosen, 1);
+				continue; //try again
+			}
+		}
+		//At this point next_pos is in bounds
+		if(!isAvailableSquare(next_pos, doWrap)) //if not a valid move...
 		{
 			//Remove direction from available directions list
 			available_directions.splice(index_chosen, 1);
 			continue; //try again
 		}
 		
-		//Reset valid directions
-		available_directions = [UP, DOWN, LEFT, RIGHT];
+		//By this point, we've found a valid direction
+		
+		//Reset valid directions for next loop
+		available_directions = [UP, RIGHT, LEFT, DOWN];
 		
 		//Update layout
-		if(layout[next_pos.row][next_pos.col] == UNUSED)
+		if(doWrap) //replace current square with a wrapper and update corresponding square
+		{
+			layout[current_pos.row][current_pos.col] = WRAP + direction;
+			layout[next_pos.row][next_pos.col] = WRAP + (-1*direction + MAGIC); //map WRAP_UP to WRAP_DOWN along with all other pairs
+		}
+		//non-wrapping moves
+		else if(layout[next_pos.row][next_pos.col] == UNUSED)
 		{
 			layout[next_pos.row][next_pos.col] = EMPTY;
 		}
 		else if(layout[next_pos.row][next_pos.col] == EMPTY)
 		{
 			layout[next_pos.row][next_pos.col] = HOLE;
-		}
-		else
-		{
-			alert('Layout error'); //debug
 		}
 		
 		//Update position
@@ -108,19 +133,28 @@ function generateLevel(seed)
 	path.pop();
 	
 	//Place finish square (will overwrite most-recently placed square)
-	//If current square is not a hole, we're good, otherwise we need to find a new square
-	while(layout[current_pos.row][current_pos.col] == HOLE)
+	//If current square is empty or unused, we're good, otherwise we need to find a new square
+	while(layout[current_pos.row][current_pos.col] != EMPTY && layout[current_pos.row][current_pos.col] != UNUSED)
 	{
 		var possible_direction = findUnusedDirection(current_pos);
 		if(possible_direction == -1) //no unused spaces nearby, must backtrack
 		{
-			//Change current square from HOLE to EMPTY
-			layout[current_pos.row][current_pos.col] = EMPTY;
-			current_pos = path.pop(); //path should never be empty (worst case: finish is 1 hop from start)
+			//Current square is either hole or wrap
+			if(layout[current_pos.row][current_pos.col] == HOLE)
+			{
+				layout[current_pos.row][current_pos.col] = EMPTY;
+				current_pos = path.pop(); //path should never be empty (worst case: finish is 1 hop from start)
+			}
+			else //wrap
+			{
+				layout[current_pos.row][current_pos.col] = UNUSED;
+				current_pos = path.pop();
+				layout[current_pos.row][current_pos.col] = EMPTY; //basically guarantees the finish will be placed here
+			}
 		}
 		else
 		{
-			current_pos = getPositionInDirection(current_pos, possible_direction);
+			current_pos = getPositionInDirection(current_pos, possible_direction, false); //finish square can't be wrapped
 		}
 	}
 	layout[current_pos.row][current_pos.col] = FINISH;
@@ -147,7 +181,9 @@ function generateLevel(seed)
 }
 
 //Returns the new position in the given direction of the given position
-function getPositionInDirection(pos, dir)
+//Perform wrapping if desired
+//If wrapping is off, resulting position may be out of bounds
+function getPositionInDirection(pos, dir, doWrap)
 {
 	var next_pos;
 	switch(dir)
@@ -165,49 +201,56 @@ function getPositionInDirection(pos, dir)
 			next_pos = {row: pos.row, col: pos.col + 1};
 			break;
 	}
+	
+	if(doWrap)
+	{
+		next_pos.row = (next_pos.row + level_height) % level_height;
+		next_pos.col = (next_pos.col + level_width) % level_width;
+	}
 	return next_pos;
 }
 
-//Check if the given square can become part of the path
-function isValidSquare(pos)
+//Check if the given position is in bounds
+function isInBounds(pos)
 {
-	//Check if in bounds
-	if(pos.row < 0 || pos.row >= level_height || pos.col < 0 || pos.col >= level_width)
-	{
-		return false;
-	}
-	
-	//Check if square available
-	var square = layout[pos.row][pos.col];
-	if(square == START || square == HOLE)
-	{
-		return false;
-	}
-	
-	return true;
+	return (pos.row >= 0 && pos.row < level_height && pos.col >= 0 && pos.col < level_width);
 }
 
-//Check if the given square is unused
-function isUnusedSquare(pos)
+//Check if the given square can become part of the path
+function isAvailableSquare(pos, doWrap)
 {
-	//Check if in bounds
-	if(pos.row < 0 || pos.row >= level_height || pos.col < 0 || pos.col >= level_width)
+	var square = layout[pos.row][pos.col];
+	if(doWrap) //don't allow for holes
 	{
-		return false;
+		return square == UNUSED;
 	}
-	
+	else //may create holes
+	{
+		return (square == UNUSED || square == EMPTY);
+	}
+}
+
+//Convenience function to check if the given square is unused
+function isUnusedSquare(pos)
+{	
 	return (layout[pos.row][pos.col] == UNUSED);
 }
 
 //Returns a random direction towards an unused square
 //If there are none, returns -1
+//This is only used for placing the finish square, which can't be wrapped, so disable wrapping
 function findUnusedDirection(pos)
 {
 	var available_directions = [];
-	if(isUnusedSquare(getPositionInDirection(pos, UP))) available_directions.push(UP);
-	if(isUnusedSquare(getPositionInDirection(pos, DOWN))) available_directions.push(DOWN);
-	if(isUnusedSquare(getPositionInDirection(pos, LEFT))) available_directions.push(LEFT);
-	if(isUnusedSquare(getPositionInDirection(pos, RIGHT))) available_directions.push(RIGHT);
+	var pos_up = getPositionInDirection(pos, UP, false);
+	var pos_down = getPositionInDirection(pos, DOWN, false);
+	var pos_left = getPositionInDirection(pos, LEFT, false);
+	var pos_right = getPositionInDirection(pos, RIGHT, false);
+	
+	if(isInBounds(pos_up) && isUnusedSquare(pos_up)) available_directions.push(UP);
+	if(isInBounds(pos_right) && isUnusedSquare(pos_right)) available_directions.push(RIGHT);
+	if(isInBounds(pos_left) && isUnusedSquare(pos_left)) available_directions.push(LEFT);
+	if(isInBounds(pos_down) && isUnusedSquare(pos_down)) available_directions.push(DOWN);
 	
 	if(available_directions.length == 0)
 	{

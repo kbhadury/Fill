@@ -118,6 +118,7 @@ function checkWinAndRedraw()
 	else //not on finish square
 	{
 		//Check if player is stuck after making a valid move
+		//Do this check here so the board doesn't turn red on a win
 		if(!player.canMove())
 		{
 			can_move = false;
@@ -139,14 +140,16 @@ function draw()
 	board_ctx.save(); //save context
 	var board_width = cur_level.width*SQUARE_SIZE + 20; //plus 10 on all sides for border line width
 	var board_height = cur_level.height*SQUARE_SIZE + 20;
-	var trans_x = canvas_elem.width/2 - board_width/2;
-	var trans_y = canvas_elem.height/2 - board_height/2;
+	const HALF_BOARD_WIDTH = board_width/2; //save some division
+	const HALF_BOARD_HEIGHT = board_height/2;
+	var trans_x = canvas_elem.width/2 - HALF_BOARD_WIDTH;
+	var trans_y = canvas_elem.height/2 - HALF_BOARD_HEIGHT;
 	board_ctx.translate(trans_x, trans_y);
 	
 	//Rotate about center (for win animation)
-	board_ctx.translate(board_width/2, board_height/2);
+	board_ctx.translate(HALF_BOARD_WIDTH, HALF_BOARD_HEIGHT);
 	board_ctx.rotate(board_rotation);
-	board_ctx.translate(-1*board_width/2, -1*board_height/2);
+	board_ctx.translate(-1*HALF_BOARD_WIDTH, -1*HALF_BOARD_HEIGHT);
 	
 	//Set alpha (for reset animation)
 	board_ctx.globalAlpha = board_opacity;
@@ -253,19 +256,6 @@ function fadeinBoard()
 	draw();
 }
 
-//-----BOARD INFO-----//
-function isInBounds(row, col)
-{
-	if(row >= cur_level.height || row < 0 || col >= cur_level.width || col < 0)
-	{
-		return false;
-	}
-	else
-	{
-		return true;
-	}
-}
-
 //-----PLAYER-----//
 
 //Constructor for a Player object
@@ -281,26 +271,26 @@ function Player(start_row, start_col)
 
 //Attempt to move player to specified position
 //Also checks if the player is stuck
-function moveTo(next_row, next_col)
+function moveTo(next_pos)
 {
 	var cur_square = cur_level.layout[this.row][this.col];
 
 	//Change destination for wrapping squares
 	if(cur_square == WRAP_LEFT || cur_square == WRAP_RIGHT)
 	{
-		next_col = (next_col + cur_level.width) % cur_level.width;
+		next_pos.col = (next_pos.col + cur_level.width) % cur_level.width;
 	}
 	else if(cur_square == WRAP_UP || cur_square == WRAP_DOWN)
 	{
-		next_row = (next_row + cur_level.height) % cur_level.height;
+		next_pos.row = (next_pos.row + cur_level.height) % cur_level.height;
 	}
 	
 	//Check if valid move
-	if(!isInBounds(next_row, next_col))
+	if(!isInBounds(next_pos))
 	{
 		return;
 	}
-	var next_square = cur_level.layout[next_row][next_col];
+	var next_square = cur_level.layout[next_pos.row][next_pos.col];
 	if(next_square == WALL || next_square == VISITED || next_square == START)
 	{
 		return;
@@ -328,8 +318,8 @@ function moveTo(next_row, next_col)
 	}
 	
 	//Move player
-	this.row = next_row;
-	this.col = next_col;
+	this.row = next_pos.row;
+	this.col = next_pos.col;
 	this.squares_visited++; //update number of squares visited
 }
 
@@ -343,10 +333,10 @@ function canMove()
 	}
 	
 	//If we're not on a wrap square, only check immediate neighbors (don't do any wrapping)
-	if(isInBounds(this.row + 1, this.col) && isOpenSquare(cur_level.layout[this.row + 1][this.col])) return true;
-	if(isInBounds(this.row - 1, this.col) && isOpenSquare(cur_level.layout[this.row - 1][this.col])) return true;
-	if(isInBounds(this.row, this.col + 1) && isOpenSquare(cur_level.layout[this.row][this.col + 1])) return true;
-	if(isInBounds(this.row, this.col - 1) && isOpenSquare(cur_level.layout[this.row][this.col - 1])) return true;
+	if(isInBounds({row:this.row + 1, col:this.col}, cur_level.height, cur_level.width) && isOpenSquare(cur_level.layout[this.row + 1][this.col])) return true;
+	if(isInBounds({row:this.row - 1, col:this.col}, cur_level.height, cur_level.width) && isOpenSquare(cur_level.layout[this.row - 1][this.col])) return true;
+	if(isInBounds({row:this.row, col:this.col + 1}, cur_level.height, cur_level.width) && isOpenSquare(cur_level.layout[this.row][this.col + 1])) return true;
+	if(isInBounds({row:this.row, col:this.col - 1}, cur_level.height, cur_level.width) && isOpenSquare(cur_level.layout[this.row][this.col - 1])) return true;
 	
 	return false;
 	
@@ -364,16 +354,16 @@ document.addEventListener('keypress', function(event){
 		switch(event.key)
 		{
 			case 'w':
-				player.moveTo(player.row-1, player.col);
+				player.moveTo({row:player.row-1, col:player.col});
 				break;
 			case 's':
-				player.moveTo(player.row+1, player.col);
+				player.moveTo({row:player.row+1, col:player.col});
 				break;
 			case 'a':
-				player.moveTo(player.row, player.col-1);
+				player.moveTo({row:player.row, col:player.col-1});
 				break;
 			case 'd':
-				player.moveTo(player.row, player.col+1);
+				player.moveTo({row:player.row, col:player.col+1});
 				break;
 			case 'k': //debug
 				animateWin();
