@@ -1,10 +1,15 @@
 //Draw data
-var canvas_elem;
-var board_ctx;
+var visible_canvas_elem;
+var visible_ctx;
+var offscreen_visible_canvas_elem;
+var offscreen_ctx;
 var board_rotation;
 var board_opacity;
 var border_color;
-const SQUARE_SIZE = 30;
+var half_board_height;
+var half_board_width;
+var sx, sy, sw, sh, dx, dy, dw, dh; //for image copying
+const SQUARE_SIZE = 30; //should be a multiple of 10 to ensure even # of px on sides of board
 
 //Game data
 var level_num;
@@ -17,9 +22,13 @@ var can_reset;
 //Called when the page is loaded
 function init()
 {
-	//Set up board
-	canvas_elem = document.getElementById('gameboard');
-	board_ctx = canvas_elem.getContext('2d');
+	//Set up boards
+	visible_canvas_elem = document.getElementById('gameboard');
+	visible_ctx = visible_canvas_elem.getContext('2d');
+	offscreen_visible_canvas_elem = document.getElementById('offscreen_canvas'); //optimize animations by copying to offscreen canvas
+	offscreen_ctx = offscreen_visible_canvas_elem.getContext('2d');
+	
+	//Set up player
 	player = new Player(0, 0); //this gets overwritten in reset()
 	
 	//Read last completed level
@@ -29,9 +38,9 @@ function init()
 	cached_level = 0;
 	
 	//Set up font
-	board_ctx.textAlign = 'center';
-	board_ctx.textBaseline = 'middle';
-	board_ctx.font = '24px monospace';
+	visible_ctx.textAlign = 'center';
+	visible_ctx.textBaseline = 'middle';
+	visible_ctx.font = '24px monospace';
 	
 	//Add level counter
 	if(level_num < levels.length)
@@ -86,6 +95,12 @@ function resetAndRedraw()
 	board_rotation = 0;
 	board_opacity = 1; //opaque
 	border_color = '#000000';
+	half_board_width = (cur_level.width*SQUARE_SIZE + 20) / 2;
+	half_board_height = (cur_level.height*SQUARE_SIZE + 20) / 2;
+	sx = dx = offscreen_visible_canvas_elem.width/2 - half_board_width;
+	sy = dy = offscreen_visible_canvas_elem.height/2 - half_board_height;
+	sw = dw = half_board_width*2;
+	sh = dh = half_board_height*2;
 	
 	//Reset player
 	player.row = cur_level.start_pos.row;
@@ -94,7 +109,9 @@ function resetAndRedraw()
 	can_move = true;
 	can_reset = true;
 	
-	//Redraw
+	//Redraw, buffering into offscreen canvas
+	offscreen_ctx.clearRect(0, 0, offscreen_visible_canvas_elem.width, offscreen_visible_canvas_elem.height);
+	draw(offscreen_ctx);
 	animateReset();
 }
 
@@ -107,12 +124,15 @@ function checkWinAndRedraw()
 		
 		if(player.squares_visited == cur_level.num_spaces)
 		{
+			//Buffer into offscreen canvas
+			offscreen_ctx.clearRect(0, 0, offscreen_visible_canvas_elem.width, offscreen_visible_canvas_elem.height);
+			draw(offscreen_ctx);
 			animateWin();
 		}
 		else //didn't touch all spaces
 		{
 			border_color = '#ff0000'; //red
-			draw();
+			draw(visible_ctx);
 		}
 	}
 	else //not on finish square
@@ -124,40 +144,29 @@ function checkWinAndRedraw()
 			can_move = false;
 			border_color = '#ff0000';
 		}
-		draw(); //draw board as usual
+		draw(visible_ctx); //draw board as usual
 	}
 }
 
 //-----DRAWING-----//
 
 //Draw the level based on cur_level data
-function draw()
+//Draws onto the specified board
+function draw(board_ctx)
 {
 	//Clear canvas
-	board_ctx.clearRect(0, 0, canvas_elem.width, canvas_elem.height);
+	board_ctx.clearRect(0, 0, visible_canvas_elem.width, visible_canvas_elem.height);
 	
 	//Translate board to center of canvas
 	board_ctx.save(); //save context
-	var board_width = cur_level.width*SQUARE_SIZE + 20; //plus 10 on all sides for border line width
-	var board_height = cur_level.height*SQUARE_SIZE + 20;
-	const HALF_BOARD_WIDTH = board_width/2; //save some division
-	const HALF_BOARD_HEIGHT = board_height/2;
-	var trans_x = canvas_elem.width/2 - HALF_BOARD_WIDTH;
-	var trans_y = canvas_elem.height/2 - HALF_BOARD_HEIGHT;
+	var trans_x = visible_canvas_elem.width/2 - half_board_width;
+	var trans_y = visible_canvas_elem.height/2 - half_board_height;
 	board_ctx.translate(trans_x, trans_y);
-	
-	//Rotate about center (for win animation)
-	board_ctx.translate(HALF_BOARD_WIDTH, HALF_BOARD_HEIGHT);
-	board_ctx.rotate(board_rotation);
-	board_ctx.translate(-1*HALF_BOARD_WIDTH, -1*HALF_BOARD_HEIGHT);
-	
-	//Set alpha (for reset animation)
-	board_ctx.globalAlpha = board_opacity;
 	
 	//Draw border
 	board_ctx.strokeStyle = border_color;
 	board_ctx.lineWidth = 10;
-	board_ctx.strokeRect(5, 5, board_width-10, board_height-10); //minus 10 to align border to corners
+	board_ctx.strokeRect(5, 5, half_board_width*2-10, half_board_height*2-10); //minus 10 to align border to corners
 	
 	//Draw level
 	for(var r = 0; r < cur_level.height; ++r)
@@ -196,11 +205,14 @@ function draw()
 	board_ctx.restore(); //restore context
 }
 
-//Runs the win animation by calling spinBoard
+//Runs the win animation, calls spinBoard
 function animateWin()
 {
+	//Disable input
 	can_move = false;
-	can_reset = false; //do animation without interruption
+	can_reset = false;
+	
+	//Offscreen canvas should already hold copy of board from checkWinAndRedraw
 	board_rotation = 0;
 	board_opacity = 1;
 
@@ -211,16 +223,15 @@ function animateWin()
 	}
 	cached_level = 0; //invalidate cache
 
-	window.win_signal = window.setInterval(spinBoard, 20);
+	window.requestAnimationFrame(spinBoard)
 }
-function spinBoard()
+function spinBoard(timestamp)
 {
 	board_rotation += 0.01 + 0.03*board_rotation; //speeds up as it rotates
 	board_opacity -= 0.01;
 	if(board_opacity < 0.03) //end animation
 	{
-		board_opacity = 0;
-		window.clearInterval(window.win_signal);
+		board_opacity = 0; //hide board
 		if(level_num < levels.length)
 		{
 			document.getElementById('levelcounter').innerHTML = "Tutorial " + (level_num+1);
@@ -231,29 +242,58 @@ function spinBoard()
 		}
 		resetAndRedraw();
 	}
-	else
+	else //Copy board from offscreen to visible and rotate
 	{
-		draw();
+		visible_ctx.clearRect(0, 0, visible_canvas_elem.width, visible_canvas_elem.height);
+		visible_ctx.save();
+		
+		//Rotate about center
+		visible_ctx.translate(visible_canvas_elem.width/2, visible_canvas_elem.height/2);
+		visible_ctx.rotate(board_rotation);
+		visible_ctx.translate(-1*visible_canvas_elem.width/2, -1*visible_canvas_elem.height/2);
+		
+		//Set alpha
+		visible_ctx.globalAlpha = board_opacity;
+		
+		//Draw, only copying the board and not the entire canvas
+		visible_ctx.drawImage(offscreen_visible_canvas_elem, sx, sy, sw, sh, dx, dy, dw, dh);
+		
+		visible_ctx.restore();
+		
+		//Continue animation
+		window.requestAnimationFrame(spinBoard);
 	}
 }
 
 //Runs the reset animation by calling fadeinBoard
+//Similar logic as in animateWin
 function animateReset()
 {
+	//Setup
 	can_reset = false;
 	board_opacity = 0;
-	window.reset_signal = window.setInterval(fadeinBoard, 20);
+	//offscreen_ctx should already hold a copy of the board from resetAndRedraw
+	
+	//Animate
+	window.requestAnimationFrame(fadeinBoard);
 }
-function fadeinBoard()
+function fadeinBoard(timestamp)
 {
 	board_opacity += 0.05;
 	if(board_opacity > 1) //end animation
 	{
 		board_opacity = 1;
-		window.clearInterval(window.reset_signal);
 		can_reset = true;
 	}
-	draw();
+	else
+	{
+		visible_ctx.save();
+		visible_ctx.clearRect(0, 0, visible_canvas_elem.width, visible_canvas_elem.height);
+		visible_ctx.globalAlpha = board_opacity;
+		visible_ctx.drawImage(offscreen_visible_canvas_elem, sx, sy, sw, sh, dx, dy, dw, dh);
+		visible_ctx.restore();
+		window.requestAnimationFrame(fadeinBoard);
+	}
 }
 
 //-----PLAYER-----//

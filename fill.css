@@ -58,6 +58,11 @@ html, body
 	text-align: center;
 }
 
+#offscreen_canvas
+{
+	display: none;
+}
+
 #rightdiv
 {
 	float: right;
