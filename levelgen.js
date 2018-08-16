@@ -76,7 +76,7 @@ function generateLevel(seed)
 		var index_chosen = randToRangeInt(rng.quick(), 0, available_directions.length);
 		var direction = available_directions[index_chosen];
 		next_pos = getPositionInDirection(current_pos, direction, doWrap);
-		if(!isInBounds(next_pos)) //if out of bounds...
+		if(!isInBounds(next_pos, level_height, level_width)) //if out of bounds...
 		{
 			if(layout[current_pos.row][current_pos.col] == EMPTY) //if wrapping is an option, do so
 			{
@@ -210,12 +210,6 @@ function getPositionInDirection(pos, dir, doWrap)
 	return next_pos;
 }
 
-//Check if the given position is in bounds
-function isInBounds(pos)
-{
-	return (pos.row >= 0 && pos.row < level_height && pos.col >= 0 && pos.col < level_width);
-}
-
 //Check if the given square can become part of the path
 function isAvailableSquare(pos, doWrap)
 {
@@ -247,10 +241,10 @@ function findUnusedDirection(pos)
 	var pos_left = getPositionInDirection(pos, LEFT, false);
 	var pos_right = getPositionInDirection(pos, RIGHT, false);
 	
-	if(isInBounds(pos_up) && isUnusedSquare(pos_up)) available_directions.push(UP);
-	if(isInBounds(pos_right) && isUnusedSquare(pos_right)) available_directions.push(RIGHT);
-	if(isInBounds(pos_left) && isUnusedSquare(pos_left)) available_directions.push(LEFT);
-	if(isInBounds(pos_down) && isUnusedSquare(pos_down)) available_directions.push(DOWN);
+	if(isInBounds(pos_up, level_height, level_width) && isUnusedSquare(pos_up)) available_directions.push(UP);
+	if(isInBounds(pos_right, level_height, level_width) && isUnusedSquare(pos_right)) available_directions.push(RIGHT);
+	if(isInBounds(pos_left, level_height, level_width) && isUnusedSquare(pos_left)) available_directions.push(LEFT);
+	if(isInBounds(pos_down, level_height, level_width) && isUnusedSquare(pos_down)) available_directions.push(DOWN);
 	
 	if(available_directions.length == 0)
 	{

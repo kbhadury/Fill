@@ -52,6 +52,29 @@ const WRAP_LEFT = 8;
 const WRAP_DOWN = 9;
 const UNUSED = 10; //for level generation
 
+//Returns the color that corresponds with each type of square
+function getColor(type)
+{
+	switch(type)
+	{
+		case START:
+		case VISITED:
+			return '#00ff00';
+		case FINISH:
+			return '#66d9ff';
+		case EMPTY:
+		case WRAP_LEFT:
+		case WRAP_RIGHT:
+		case WRAP_UP:
+		case WRAP_DOWN:
+			return '#eeeeee';
+		case WALL:
+			return '#000000';
+		case HOLE:
+			return '#aaaaaa';
+	}
+}
+
 //Returns true if the square can be moved onto
 function isOpenSquare(square)
 {
@@ -200,26 +223,3 @@ var levels = [
 	extrawrap_l,
 	allwrap_l
 	];
-
-//Returns the color that corresponds with each type of square
-function getColor(type)
-{
-	switch(type)
-	{
-		case START:
-		case VISITED:
-			return '#00ff00';
-		case FINISH:
-			return '#66d9ff';
-		case EMPTY:
-		case WRAP_LEFT:
-		case WRAP_RIGHT:
-		case WRAP_UP:
-		case WRAP_DOWN:
-			return '#eeeeee';
-		case WALL:
-			return '#000000';
-		case HOLE:
-			return '#aaaaaa';
-	}
-}

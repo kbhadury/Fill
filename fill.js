@@ -326,7 +326,7 @@ function moveTo(next_pos)
 	}
 	
 	//Check if valid move
-	if(!isInBounds(next_pos))
+	if(!isInBounds(next_pos, cur_level.height, cur_level.width))
 	{
 		return;
 	}
