@@ -10,9 +10,13 @@ var half_board_height;
 var half_board_width;
 var sx, sy, sw, sh, dx, dy, dw, dh; //for image copying
 const SQUARE_SIZE = 30; //should be a multiple of 10 to ensure even # of px on sides of board
+const BORDER_WIDTH = 10;
+const LIGHT_THEME_BG = '#ffffff';
+const DARK_THEME_BG = '#424242';
 
 //Game data
 var level_num;
+var max_level;
 var cur_level;
 var cached_level;
 var player;
@@ -22,6 +26,17 @@ var can_reset;
 //Called when the page is loaded
 function init()
 {
+	//Set theme
+	var current_theme = getTheme();
+	if(current_theme == 'Light')
+	{
+		setLightTheme();
+	}
+	else
+	{
+		setDarkTheme();
+	}
+	
 	//Set up boards
 	visible_canvas_elem = document.getElementById('gameboard');
 	visible_ctx = visible_canvas_elem.getContext('2d');
@@ -34,6 +49,14 @@ function init()
 	//Read last completed level
 	level_num = getLastLevelAccessed();
 	
+	//Read max level
+	max_level = getMaxLevelAccessed();
+	if(max_level < level_num)
+	{
+		max_level = level_num;
+		setMaxLevelAccessed(max_level);
+	}
+	
 	//Clear cache
 	cached_level = 0;
 	
@@ -43,6 +66,15 @@ function init()
 	visible_ctx.font = '24px monospace';
 	
 	//Add level counter
+	updateLevelCounter();
+	
+	//Go!
+	resetAndRedraw();
+}
+
+//-----CONVENIENCE FUNCTIONS-----//
+function updateLevelCounter()
+{
 	if(level_num < levels.length)
 	{
 		document.getElementById('levelcounter').innerHTML = "Tutorial " + (level_num+1);
@@ -51,9 +83,6 @@ function init()
 	{
 		document.getElementById('levelcounter').innerHTML = (level_num+1);
 	}
-	
-	//Go!
-	resetAndRedraw();
 }
 
 //-----STORAGE FUNCTIONS-----//
@@ -72,6 +101,36 @@ function setLastLevelAccessed(value)
 {
 	var local_storage = window.localStorage;
 	local_storage.setItem("lastLevelAccessed", ""+value);
+}
+
+//Read max level accessed from local storage
+function getMaxLevelAccessed()
+{
+	var local_storage = window.localStorage;
+	var max_access = local_storage.getItem("maxLevelAccessed");
+	if(max_access == null) return 0;
+	else return parseInt(max_access);
+}
+
+//Set max level accessed in local storage
+function setMaxLevelAccessed(value)
+{
+	var local_storage = window.localStorage;
+	local_storage.setItem("maxLevelAccessed", ""+value);
+}
+
+function getTheme()
+{
+	var local_storage = window.localStorage;
+	var theme = local_storage.getItem("theme");
+	if(theme == null) return "Light";
+	else return theme;
+}
+
+function setTheme(value)
+{
+	var local_storage = window.localStorage;
+	local_storage.setItem("theme", value);
 }
 
 //-----END CONDITIONS-----//
@@ -95,8 +154,8 @@ function resetAndRedraw()
 	board_rotation = 0;
 	board_opacity = 1; //opaque
 	border_color = '#000000';
-	half_board_width = (cur_level.width*SQUARE_SIZE + 20) / 2;
-	half_board_height = (cur_level.height*SQUARE_SIZE + 20) / 2;
+	half_board_width = (cur_level.width*SQUARE_SIZE + 2*BORDER_WIDTH) / 2;
+	half_board_height = (cur_level.height*SQUARE_SIZE + 2*BORDER_WIDTH) / 2;
 	sx = dx = offscreen_visible_canvas_elem.width/2 - half_board_width;
 	sy = dy = offscreen_visible_canvas_elem.height/2 - half_board_height;
 	sw = dw = half_board_width*2;
@@ -106,13 +165,15 @@ function resetAndRedraw()
 	player.row = cur_level.start_pos.row;
 	player.col = cur_level.start_pos.col;
 	player.squares_visited = 1;
-	can_move = true;
-	can_reset = true;
 	
 	//Redraw, buffering into offscreen canvas
 	offscreen_ctx.clearRect(0, 0, offscreen_visible_canvas_elem.width, offscreen_visible_canvas_elem.height);
 	draw(offscreen_ctx);
 	animateReset();
+	
+	//Final touches
+	can_reset = true;
+	can_move = true;
 }
 
 //Check if we're on the finish square.  If so, check if all squares were visited.  Also redraws the board accordingly
@@ -165,8 +226,8 @@ function draw(board_ctx)
 	
 	//Draw border
 	board_ctx.strokeStyle = border_color;
-	board_ctx.lineWidth = 10;
-	board_ctx.strokeRect(5, 5, half_board_width*2-10, half_board_height*2-10); //minus 10 to align border to corners
+	board_ctx.lineWidth = BORDER_WIDTH;
+	board_ctx.strokeRect(BORDER_WIDTH/2, BORDER_WIDTH/2, half_board_width*2-BORDER_WIDTH, half_board_height*2-BORDER_WIDTH); //align border to corners
 	
 	//Draw level
 	for(var r = 0; r < cur_level.height; ++r)
@@ -177,30 +238,30 @@ function draw(board_ctx)
 			board_ctx.fillStyle = getColor(type);
 			if(type == WRAP_LEFT)
 			{
-				board_ctx.fillRect(c*SQUARE_SIZE, 10+r*SQUARE_SIZE, SQUARE_SIZE+10, SQUARE_SIZE);
+				board_ctx.fillRect(c*SQUARE_SIZE, BORDER_WIDTH+r*SQUARE_SIZE, SQUARE_SIZE+BORDER_WIDTH, SQUARE_SIZE);
 			}
 			else if(type == WRAP_RIGHT)
 			{
-				board_ctx.fillRect(10+c*SQUARE_SIZE, 10+r*SQUARE_SIZE, SQUARE_SIZE+10, SQUARE_SIZE);
+				board_ctx.fillRect(BORDER_WIDTH+c*SQUARE_SIZE, BORDER_WIDTH+r*SQUARE_SIZE, SQUARE_SIZE+BORDER_WIDTH, SQUARE_SIZE);
 			}
 			else if(type == WRAP_UP)
 			{
-				board_ctx.fillRect(10+c*SQUARE_SIZE, r*SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE+10);
+				board_ctx.fillRect(BORDER_WIDTH+c*SQUARE_SIZE, r*SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE+BORDER_WIDTH);
 			}
 			else if(type == WRAP_DOWN)
 			{
-				board_ctx.fillRect(10+c*SQUARE_SIZE, 10+r*SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE+10);
+				board_ctx.fillRect(BORDER_WIDTH+c*SQUARE_SIZE, BORDER_WIDTH+r*SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE+BORDER_WIDTH);
 			}
 			else
 			{
-				board_ctx.fillRect(10+c*SQUARE_SIZE, 10+r*SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
+				board_ctx.fillRect(BORDER_WIDTH+c*SQUARE_SIZE, BORDER_WIDTH+r*SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
 			}
 		}
 	}
 	
 	//Draw player
 	board_ctx.fillStyle = '#00ff00';
-	board_ctx.fillRect(10+player.col*SQUARE_SIZE, 10+player.row*SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
+	board_ctx.fillRect(BORDER_WIDTH+player.col*SQUARE_SIZE, BORDER_WIDTH+player.row*SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
 	
 	board_ctx.restore(); //restore context
 }
@@ -217,9 +278,13 @@ function animateWin()
 	board_opacity = 1;
 
 	++level_num;
-	if(level_num > getLastLevelAccessed()) //update local storage if we've advanced
+	
+	//Update local storage
+	setLastLevelAccessed(level_num);
+	if(level_num > max_level) //update only if we've advanced
 	{
-		setLastLevelAccessed(level_num);
+		max_level = level_num;
+		setMaxLevelAccessed(max_level);
 	}
 	cached_level = 0; //invalidate cache
 
@@ -232,14 +297,7 @@ function spinBoard(timestamp)
 	if(board_opacity < 0.03) //end animation
 	{
 		board_opacity = 0; //hide board
-		if(level_num < levels.length)
-		{
-			document.getElementById('levelcounter').innerHTML = "Tutorial " + (level_num+1);
-		}
-		else
-		{
-			document.getElementById('levelcounter').innerHTML = (level_num+1);
-		}
+		updateLevelCounter();
 		resetAndRedraw();
 	}
 	else //Copy board from offscreen to visible and rotate
@@ -405,13 +463,73 @@ document.addEventListener('keypress', function(event){
 			case 'd':
 				player.moveTo({row:player.row, col:player.col+1});
 				break;
-			case 'k': //debug
-				animateWin();
+			case 't':
+				toggleTheme();
 				break;
-			case 'c': //debug
-				cached_level = 0;
+			case 'z':
+				gotoPrevLevel();
+				break;
+			case 'x':
+				gotoNextLevel();
 				break;
 		}
 	}
 	checkWinAndRedraw();
 });
+
+function gotoPrevLevel()
+{
+	//Check if we should be allowed to change levels
+	if(!can_reset || level_num == 0) return;
+	
+	//Move to prev level
+	--level_num;
+	setLastLevelAccessed(level_num);
+	
+	//Invalidate cache and reset
+	cached_level = 0;
+	can_move = false;
+	updateLevelCounter();
+	resetAndRedraw();
+}
+
+function gotoNextLevel()
+{
+	//Check if we should be allowed to change levels
+	if(!can_reset || level_num == max_level) return;
+	
+	//Move to next level
+	++level_num;
+	setLastLevelAccessed(level_num);
+	
+	//Invalidate cache and reset
+	cached_level = 0;
+	can_move = false;
+	updateLevelCounter();
+	resetAndRedraw();
+}
+
+function toggleTheme()
+{
+	var current_theme = getTheme();
+	if(current_theme == 'Light')
+	{
+		setDarkTheme();
+	}
+	else
+	{
+		setLightTheme();
+	}
+}
+
+function setLightTheme()
+{
+	setTheme('Light');
+	document.body.style.backgroundColor = LIGHT_THEME_BG;
+}
+
+function setDarkTheme()
+{
+	setTheme('Dark');
+	document.body.style.backgroundColor = DARK_THEME_BG;
+}

@@ -20,26 +20,26 @@
 			<div class='textbox'>s ... down</div>
 			<div class='textbox'>d .. right</div>
 			<div class='textbox'>r .. reset</div>
+			<div class='textbox'>t .. theme</div>
+			<div class='textbox'>z ... prev</div>
+			<div class='textbox'>x ... next</div>
 		</div>
 	</div>
 	
-	<div id='middlediv'>
-		<canvas id='gameboard' width='400' height='400'>
-			If you can see this, your browser doesn't support the canvas element :(
-		</canvas>
-		<canvas id='offscreen_canvas' width='400' height='400'>
-		</canvas>
-	</div>
+	<canvas id='gameboard' width='330px' height='330px'>
+		If you can see this, your browser doesn't support the canvas element :(
+	</canvas>
+	<canvas id='offscreen_canvas' width='330px' height='330px'>
+	</canvas>
 	
-	<div id='rightdiv' class='hcenterdiv'>
+	<div id='rightdiv'>
 		<div id='leveldiv'>
-		<p>level</p>
-		<p id='levelcounter'>Error parsing levels</p> <!-- This should get replaced by the code -->
+			<p id='levelcounter'>Loading...</p> <!-- This should get replaced by the code -->
 		</div>
 	</div>
 	
 	<!-- https://github.com/davidbau/seedrandom -->
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/2.4.3/seedrandom.min.js"></script>
+	<script src='js/seedrandom.min.js'></script>
 	
 	<!-- My scripts -->
 	<script src='js/levels.js'></script>

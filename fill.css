@@ -6,6 +6,9 @@ html, body
 	font-family: monospace;
 	font-size: 24px;
 	color: #aaaaaa; /* text color */
+	text-align: center; /* center canvas */
+	-webkit-transition: .6s ease;
+	transition: .6s ease;
 }
 
 #topdiv
@@ -43,19 +46,14 @@ html, body
 	width: 75%;
 	margin-left: auto;
 	margin-right: auto;
-	margin-top: 20px;
-	margin-bottom: 20px;
+	margin-top: 5%;
+	margin-bottom: 5%;
 }
 
-#middlediv
+#gameboard
 {
-	float: left;
-	width: 60%;
 	height: 75%;
-	display: block;
-	margin-left: auto;
-	margin-right: auto;
-	text-align: center;
+	
 }
 
 #offscreen_canvas

@@ -220,6 +220,6 @@ var levels = [
 	backtrack_l,
 	holeblock_l,
 	wrap_l,
-	extrawrap_l,
+	//extrawrap_l,  //not necessary, this level only causes confusion
 	allwrap_l
 	];

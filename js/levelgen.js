@@ -127,8 +127,6 @@ function generateLevel(seed)
 		++step_count;
 	} //while loop
 	
-	console.log(path); //just to verify that it's actually solvable
-	
 	//Remove last square from path so we won't backtrack on ourself
 	path.pop();
 	
