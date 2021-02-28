@@ -442,39 +442,41 @@ function canMove()
 
 //Keyboard input
 document.addEventListener('keypress', function(event){
-	if(event.key == 'r' && can_reset)
-	{
-		resetAndRedraw();
-	}
-	else //try to move, check win, and redraw
-	{
-		if(!can_move) return;
-		switch(event.key)
-		{
-			case 'w':
-				player.moveTo({row:player.row-1, col:player.col});
-				break;
-			case 's':
-				player.moveTo({row:player.row+1, col:player.col});
-				break;
-			case 'a':
-				player.moveTo({row:player.row, col:player.col-1});
-				break;
-			case 'd':
-				player.moveTo({row:player.row, col:player.col+1});
-				break;
-			case 't':
-				toggleTheme();
-				break;
-			case 'z':
-				gotoPrevLevel();
-				break;
-			case 'x':
-				gotoNextLevel();
-				break;
-		}
-	}
-	checkWinAndRedraw();
+    switch(event.key)
+    {
+        case 'r':
+            if(can_reset) resetAndRedraw();
+            break;
+        case 'w':
+            if(!can_move) return;
+            player.moveTo({row:player.row-1, col:player.col});
+            checkWinAndRedraw();
+            break;
+        case 's':
+            if(!can_move) return;
+            player.moveTo({row:player.row+1, col:player.col});
+            checkWinAndRedraw();
+            break;
+        case 'a':
+            if(!can_move) return;
+            player.moveTo({row:player.row, col:player.col-1});
+            checkWinAndRedraw();
+            break;
+        case 'd':
+            if(!can_move) return;
+            player.moveTo({row:player.row, col:player.col+1});
+            checkWinAndRedraw();
+            break;
+        case 't':
+            toggleTheme();
+            break;
+        case 'z':
+            gotoPrevLevel();
+            break;
+        case 'x':
+            gotoNextLevel();
+            break;
+    }
 });
 
 function gotoPrevLevel()
