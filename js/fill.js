@@ -26,6 +26,10 @@ var can_reset;
 //Called when the page is loaded
 function init()
 {
+    //Load music
+    backgroundMusic = new Audio('sound/backgroundLoop.mp3')
+    backgroundMusic.loop = true;
+    
 	//Set theme
 	var current_theme = getTheme();
 	if(current_theme == 'Light')
@@ -469,6 +473,16 @@ document.addEventListener('keypress', function(event){
             break;
         case 't':
             toggleTheme();
+            break;
+        case 'm':
+            if(backgroundMusic.paused)
+            {
+                backgroundMusic.play();
+            }
+            else
+            {
+                backgroundMusic.pause();
+            }
             break;
         case 'z':
             gotoPrevLevel();
